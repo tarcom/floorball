@@ -226,7 +226,6 @@ const SCENES = [
     { t: 7.6, text: 'Først når den nye back står på sin plads, går den anden back ud. To backs ude samtidig er en direkte invitation til et kontraangreb.' },
     { t: 13.6, text: 'Så centeren. Han skifter typisk oftest, fordi han løber mest.' },
     { t: 18, text: 'Wingsene skifter til allersidst, når bolden er sikker. De står længst fra bænken og tættest på bolden.' },
-    { t: 20, text: 'Og en huskeregel til kampen: er du i tvivl om du kan nå det, så bliv på banen. Et halvt skift koster et mål meget oftere end trætte ben gør.' },
   ],
 },
 
