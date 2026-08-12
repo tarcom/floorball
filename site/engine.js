@@ -236,9 +236,19 @@ class Speaker {
        nogle gange. Nu ignoreres events fra en forældet token. */
     this.token = 0;
     this.speaking = false;
+    this.started = false;      // har browseren rent faktisk sagt noget?
+    this.everStarted = false;  // har den nogensinde gjort det i denne session?
     this.deadline = 0;
+    this._startGuard = null;
+    // Stemmelisten er som regel tom ved første kald og fyldes asynkront.
+    // onVoices sættes af app.js, så noten om manglende dansk stemme ikke
+    // når at blive vist, før browseren overhovedet har svaret.
+    this.onVoices = null;
     if (this.supported) {
-      const pick = () => { this.voice = this._pickDanish(); };
+      const pick = () => {
+        this.voice = this._pickDanish();
+        if (this.onVoices) this.onVoices();
+      };
       pick();
       speechSynthesis.addEventListener('voiceschanged', pick);
     }
@@ -273,9 +283,15 @@ class Speaker {
     return true;
   }
 
+  /* Sand kun mens der faktisk kommer lyd ud — bruges til at få knappen
+     til at pulsere, så man kan se at talen er i gang. */
+  get audible() { return this.busy && this.started; }
+
   stop() {
     this.token++;
     this.speaking = false;
+    this.started = false;
+    clearTimeout(this._startGuard);
     if (this.supported) { try { speechSynthesis.cancel(); } catch (_) {} }
     if (this.audio) { this.audio.pause(); this.audio = null; }
   }
@@ -287,14 +303,28 @@ class Speaker {
 
     const my = this.token;
     const done = () => { if (my === this.token) this.speaking = false; };
+    const began = () => {
+      if (my !== this.token) return;
+      this.started = true;
+      this.everStarted = true;
+    };
     this.speaking = true;
     this.deadline = performance.now()
       + Math.min(30000, 1600 + text.split(' ').length * 430) + 8000;
+
+    /* Browsere må nægte at tale, før brugeren har rørt siden. Kommer der
+       ingen 'start' inden for et sekund, antager vi at det blev blokeret og
+       slipper afspilningen fri — ellers ville den holde pause ved næste
+       trinskift og vente på en stemme der aldrig kommer. */
+    this._startGuard = setTimeout(() => {
+      if (my === this.token && !this.started) this.speaking = false;
+    }, 1100);
 
     // Er der lagt en rigtig indtaling på trinnet, vinder den over den
     // syntetiske stemme. Koden skal ikke ændres for at skifte.
     if (step.audio) {
       this.audio = new Audio(step.audio);
+      this.audio.addEventListener('playing', began);
       this.audio.addEventListener('ended', done);
       this.audio.addEventListener('error', done);
       this.audio.play().catch(done);
@@ -307,6 +337,7 @@ class Speaker {
     if (this.voice) u.voice = this.voice;
     u.rate = this.rate;
     u.pitch = 1;
+    u.addEventListener('start', began);
     u.addEventListener('end', done);
     u.addEventListener('error', done);
     speechSynthesis.speak(u);

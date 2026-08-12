@@ -183,6 +183,17 @@ Oplæsningen bruger browserens indbyggede talesyntese (`speechSynthesis`) med
 afhænger af, hvilken dansk stemme der er installeret på enheden. Er der ingen,
 siger siden det.
 
+**Talen er slået til fra start.** De fleste opdager den ikke, hvis de selv skal
+finde knappen. Slår man den fra, huskes det i `localStorage`
+(`vhg.floorball.tale`). Knappen pulserer mens der faktisk kommer lyd ud.
+
+Browsere må nægte at tale, før brugeren har rørt siden. Derfor to ting:
+`Speaker.started` sættes først på utterancens `start`-event, og en vagt på
+1,1 sekund slipper afspilningen fri, hvis den aldrig kommer — ellers ville
+animationen holde pause og vente på en stemme der er blevet blokeret. Ved
+første klik eller tastetryk prøver `armSpeech()` igen, men kun hvis der aldrig
+er kommet lyd ud (`everStarted`), så en igangværende oplæsning ikke afbrydes.
+
 **"Vent på tale"** holder afspilningen tilbage ved *slutningen* af et trin, hvis
 oplæsningen ikke er nået i mål. Den venter altså ikke i starten — så ville
 billedet stå stille mens der blev talt. Det er styret af `Speaker.busy`, som

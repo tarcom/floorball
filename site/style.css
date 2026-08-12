@@ -252,7 +252,19 @@ body.nav-open .nav { display: block; }
   font-size: .88rem;
   cursor: pointer;
 }
-.pill.is-on { background: #16323a; border-color: var(--teal); color: #8ff5dc; }
+.pill.is-on {
+  background: #16323a;
+  border-color: var(--teal);
+  color: #8ff5dc;
+  box-shadow: 0 0 0 1px rgba(23, 183, 155, .35), 0 0 14px -4px var(--teal);
+}
+
+/* Pulserer mens der faktisk kommer lyd ud, så man kan se at talen kører. */
+.pill.is-speaking { animation: talepuls 1.8s ease-in-out infinite; }
+@keyframes talepuls {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(23, 183, 155, .55), 0 0 14px -4px var(--teal); }
+  50%      { box-shadow: 0 0 0 8px rgba(23, 183, 155, 0),  0 0 20px -2px var(--teal); }
+}
 .btn { background: var(--gold); color: #241f10; border-color: transparent; font-weight: 650; }
 .btn:disabled { opacity: .55; cursor: default; }
 
@@ -478,4 +490,5 @@ body.nav-open .nav { display: block; }
 
 @media (prefers-reduced-motion: reduce) {
   .icon-btn:active { transform: none; }
+  .pill.is-speaking { animation: none; }
 }

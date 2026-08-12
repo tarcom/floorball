@@ -391,6 +391,7 @@ function render(t, wallClock) {
       player.playing ? 'Pause' : (player.atEnd ? 'Spil igen' : 'Afspil'));
   }
   el.stage.classList.toggle('is-waiting', player.playing && player.shouldWait());
+  el.speech.classList.toggle('is-speaking', speaker.audible);
 }
 
 /* --------------------------------------------------------------- trin */
@@ -457,10 +458,39 @@ el.next.addEventListener('click', () => loadScene(sceneIndex + 1));
 el.optTrails.addEventListener('change', () => { showTrails = el.optTrails.checked; });
 el.optWait.addEventListener('change', () => { waitForSpeech = el.optWait.checked; });
 
-el.speech.addEventListener('click', () => {
-  speaker.enabled = !speaker.enabled;
+/* Talen er slået til fra start — den er sidens bedste feature, og de fleste
+   opdager den ikke, hvis de selv skal finde knappen. Har man slået den fra
+   én gang, huskes det. */
+const TALE_KEY = 'vhg.floorball.tale';
+try {
+  speaker.enabled = localStorage.getItem(TALE_KEY) !== '0';
+} catch (_) {
+  speaker.enabled = true;      // privat browsing uden localStorage
+}
+
+function paintSpeechButton() {
   el.speech.classList.toggle('is-on', speaker.enabled);
   el.speech.textContent = speaker.enabled ? '🔊 Tale til' : '🔇 Tale fra';
+}
+
+/* Safari og til dels Chrome nægter at tale, før brugeren har rørt siden.
+   Ved første klik eller tastetryk prøver vi igen — men kun hvis der aldrig
+   er kommet lyd ud, så vi ikke afbryder en oplæsning der kører fint. */
+let speechArmed = false;
+function armSpeech() {
+  if (speechArmed) return;
+  speechArmed = true;
+  speaker.unlock();
+  if (speaker.enabled && !speaker.everStarted) lastStepIdx = -2;
+}
+for (const ev of ['pointerdown', 'keydown', 'touchstart']) {
+  window.addEventListener(ev, armSpeech, { once: true, passive: true });
+}
+
+el.speech.addEventListener('click', () => {
+  speaker.enabled = !speaker.enabled;
+  paintSpeechButton();
+  try { localStorage.setItem(TALE_KEY, speaker.enabled ? '1' : '0'); } catch (_) {}
   if (speaker.enabled) {
     speaker.unlock();
     updateSpeechNote();
@@ -472,6 +502,7 @@ el.speech.addEventListener('click', () => {
 });
 
 function updateSpeechNote() {
+  if (!speaker.enabled) { el.speechNote.textContent = ''; return; }
   if (!speaker.supported) {
     el.speechNote.textContent = 'Denne browser kan ikke læse op. Prøv Chrome, Edge eller Safari.';
   } else if (!speaker.hasDanishVoice) {
@@ -496,6 +527,9 @@ window.addEventListener('orientationchange', () => setTimeout(layout, 120));
 /* ------------------------------------------------------------------ start */
 
 buildNav();
+paintSpeechButton();
+speaker.onVoices = updateSpeechNote;
+updateSpeechNote();
 const fromHash = SCENES.findIndex(s => s.id === location.hash.replace('#', ''));
 loadScene(fromHash >= 0 ? fromHash : 0, false);
 layout();
