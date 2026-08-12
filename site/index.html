@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Floorball-taktik · 6 mod 6</title>
+<meta name="description" content="Korte animerede taktiksekvenser for motionsfloorball: opstilling, forsvar og angreb med målmand, center, to backs og to wings.">
+<meta name="theme-color" content="#0f151d">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <button id="navToggle" class="icon-btn" aria-label="Vis eller skjul menu">☰</button>
+  <div class="brand">
+    <strong>Floorball-taktik</strong>
+    <span>motionshold · 6 mod 6</span>
+  </div>
+  <div class="topbar-nav">
+    <button id="prevScene" class="icon-btn" aria-label="Forrige">‹</button>
+    <button id="nextScene" class="icon-btn" aria-label="Næste">›</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <nav id="nav" class="nav" aria-label="Taktikker"></nav>
+
+  <main class="main">
+    <div class="scene-head">
+      <h1 id="sceneTitle"></h1>
+      <p id="sceneSummary"></p>
+    </div>
+
+    <div id="stage" class="stage">
+      <canvas id="court" class="is-horizontal"></canvas>
+    </div>
+
+    <p id="caption" class="caption"></p>
+
+    <div class="controls">
+      <button id="restart" class="icon-btn" aria-label="Forfra">⟲</button>
+      <button id="play" class="icon-btn play" aria-label="Afspil">▶</button>
+      <input id="scrub" class="scrub" type="range" min="0" max="10" step="0.05" value="0" aria-label="Tidslinje">
+      <span id="time" class="time">0:00 / 0:00</span>
+      <select id="rate" class="rate" aria-label="Hastighed">
+        <option value="0.6">0,6×</option>
+        <option value="0.85">0,85×</option>
+        <option value="1" selected>1×</option>
+        <option value="1.3">1,3×</option>
+      </select>
+      <button id="speech" class="pill">🔇 Tale fra</button>
+    </div>
+
+    <p id="speechNote" class="note"></p>
+
+    <div class="options">
+      <label><input type="checkbox" id="optTrails" checked> Løbespor</label>
+      <label><input type="checkbox" id="optHelpers" checked> Zonelinjer</label>
+      <label><input type="checkbox" id="optWait" checked> Vent på tale</label>
+    </div>
+
+    <section class="panel">
+      <h2>Kernepunkter</h2>
+      <ul id="points" class="points"></ul>
+    </section>
+
+    <section class="panel">
+      <h2>Forløbet trin for trin</h2>
+      <ol id="steps" class="steps"></ol>
+    </section>
+
+    <section class="panel legend">
+      <h2>Sådan læses banen</h2>
+      <ul>
+        <li><span class="key key-home"></span> Vores hold. <strong>MV</strong> målmand, <strong>B1</strong>/<strong>B2</strong> backs, <strong>C</strong> center, <strong>W1</strong>/<strong>W2</strong> wings.</li>
+        <li><span class="key key-away"></span> Modstanderen.</li>
+        <li><span class="key key-ball"></span> Bolden. Den, der har den, får en gul ring om sig.</li>
+        <li><span class="key key-trail"></span> Stiplet spor viser, hvor en spiller har løbet de sidste sekunder.</li>
+        <li>Vi forsvarer altid målet til <strong>venstre</strong> og angriber mod <strong>højre</strong> — i alle scener, så billedet er til at genkende.</li>
+        <li>De to lyse lodrette streger er hjælpelinjer, der deler banen i egen zone, midterbane og angrebszone. <em>De findes ikke på en rigtig bane</em> — der er hverken offside eller blå linjer i floorball.</li>
+      </ul>
+    </section>
+
+    <footer class="foot">
+      <p>Banemarkeringerne er tegnet efter de officielle mål på 40 × 20 m, men er en illustration — ikke en opmålingstegning.</p>
+      <p>Tale bruger browserens indbyggede stemme. Virker bedst i Chrome, Edge og Safari, og kræver en dansk stemme på enheden.</p>
+    </footer>
+  </main>
+</div>
+
+<script src="court.js"></script>
+<script src="engine.js"></script>
+<script src="scenes.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,291 @@
+/* style.css — mobil først. Layoutet skifter til to spalter ved 900 px. */
+
+:root {
+  --bg:        #0f151d;
+  --panel:     #18202b;
+  --panel-2:   #1f2937;
+  --line:      #2b3746;
+  --text:      #e7edf4;
+  --muted:     #9fb0c2;
+  --home:      #4f8bf5;
+  --away:      #e0503f;
+  --ball:      #ffcc1f;
+  --accent:    #00d6a1;
+  --radius:    14px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+h1, h2 { line-height: 1.25; }
+
+/* ------------------------------------------------------------- topbjælke */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  padding-top: max(10px, env(safe-area-inset-top));
+  background: rgba(15, 21, 29, .92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand { display: flex; flex-direction: column; line-height: 1.15; }
+.brand strong { font-size: 1.05rem; letter-spacing: .2px; }
+.brand span { font-size: .78rem; color: var(--muted); }
+
+.topbar-nav { margin-left: auto; display: flex; gap: 6px; }
+
+.icon-btn {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  border-radius: 10px;
+  min-width: 42px;
+  height: 42px;
+  font-size: 1.05rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.icon-btn:hover { border-color: #3c4c60; }
+.icon-btn:active { transform: translateY(1px); }
+.icon-btn.play { background: var(--accent); color: #05231c; border-color: transparent; font-weight: 700; }
+
+/* ----------------------------------------------------------------- layout */
+
+.layout { display: block; }
+
+.main {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 14px 12px 60px;
+}
+
+.scene-head h1 { margin: 6px 0 4px; font-size: 1.4rem; }
+.scene-head p { margin: 0 0 12px; color: var(--muted); font-size: .95rem; }
+
+/* ------------------------------------------------------------------- menu */
+
+.nav {
+  display: none;
+  padding: 8px 12px 20px;
+  border-bottom: 1px solid var(--line);
+  background: #121924;
+}
+body.nav-open .nav { display: block; }
+
+.nav-group h2 {
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+  margin: 16px 0 8px;
+}
+
+.nav-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--text);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  font: inherit;
+}
+.nav-item:hover { border-color: #3c4c60; background: var(--panel-2); }
+.nav-item.is-active { border-color: var(--accent); background: #142a2a; }
+.nav-title { display: block; font-weight: 650; font-size: .95rem; }
+.nav-sub { display: block; color: var(--muted); font-size: .8rem; margin-top: 2px; }
+
+/* ------------------------------------------------------------------ banen */
+
+.stage {
+  display: flex;
+  justify-content: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 8px;
+  overflow: hidden;
+}
+
+#court { display: block; max-width: 100%; touch-action: manipulation; }
+#court.is-horizontal { width: 100%; aspect-ratio: 40 / 20; }
+#court.is-vertical { height: min(70vh, 620px); aspect-ratio: 20 / 40; }
+
+/* --------------------------------------------------------------- tekstboks */
+
+.caption {
+  min-height: 4.4em;
+  margin: 12px 0;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
+/* -------------------------------------------------------------- kontroller */
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+
+/* På smalle skærme får tidslinjen sin egen række, så knapperne ikke mases. */
+@media (max-width: 520px) {
+  #restart, #play, .time, .rate { order: 1; }
+  .scrub { order: 2; flex: 1 1 100%; }
+  .pill { order: 3; }
+}
+
+/* min-width: 0 er nødvendig — uden den nægter flex-elementerne at krympe
+   under deres indhold, og hele siden bliver bredere end en telefonskærm. */
+.scrub {
+  flex: 1 1 140px;
+  min-width: 0;
+  accent-color: var(--accent);
+  height: 42px;
+}
+
+.time {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-size: .82rem;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.rate, .pill {
+  appearance: none;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  height: 42px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: .88rem;
+  cursor: pointer;
+}
+.pill.is-on { background: #142a2a; border-color: var(--accent); color: #8ff5dc; }
+
+.note { color: #ffd48a; font-size: .82rem; margin: 8px 2px 0; }
+
+.options {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 12px 2px 0;
+  color: var(--muted);
+  font-size: .86rem;
+}
+.options label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.options input { accent-color: var(--accent); width: 17px; height: 17px; }
+
+/* ------------------------------------------------------------------ paneler */
+
+.panel {
+  margin-top: 20px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.panel h2 {
+  margin: 0 0 10px;
+  font-size: .74rem;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+}
+
+.points { margin: 0; padding-left: 20px; }
+.points li { margin-bottom: 6px; }
+
+.steps { margin: 0; padding: 0; list-style: none; counter-reset: step; }
+.step {
+  display: flex;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  font-size: .93rem;
+}
+.step:hover { background: var(--panel-2); }
+.step.is-active { background: #142a2a; border-color: var(--accent); }
+.step-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-size: .8rem;
+  padding-top: 2px;
+  min-width: 34px;
+}
+
+.legend ul { margin: 0; padding-left: 2px; list-style: none; }
+.legend li { margin-bottom: 8px; font-size: .9rem; color: #cfdae6; }
+.key {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: -2px;
+}
+.key-home { background: var(--home); }
+.key-away { background: var(--away); }
+.key-ball { background: var(--ball); width: 11px; height: 11px; }
+.key-trail { border-radius: 2px; height: 3px; width: 22px; background: repeating-linear-gradient(90deg, var(--home) 0 5px, transparent 5px 9px); }
+
+.foot { margin-top: 22px; color: var(--muted); font-size: .8rem; }
+.foot p { margin: 4px 0; }
+
+/* --------------------------------------------------------------- to spalter */
+
+@media (min-width: 900px) {
+  .layout {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    align-items: start;
+  }
+  .nav {
+    display: block !important;
+    position: sticky;
+    top: 63px;
+    max-height: calc(100vh - 63px);
+    overflow-y: auto;
+    border-bottom: none;
+    border-right: 1px solid var(--line);
+  }
+  #navToggle { display: none; }
+  .main { padding: 18px 24px 70px; }
+  .scene-head h1 { font-size: 1.65rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-btn:active { transform: none; }
+}
