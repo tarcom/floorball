@@ -3,23 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Floorball-taktik · 6 mod 6</title>
-<meta name="description" content="Korte animerede taktiksekvenser for motionsfloorball: opstilling, forsvar og angreb med målmand, center, to backs og to wings.">
-<meta name="theme-color" content="#0f151d">
+<title>Floorball-taktik · VHG</title>
+<meta name="description" content="Animeret floorball-taktik for VHG's motionshold: opstilling, forsvar og angreb med målmand, center, to backs og to wings.">
+<meta name="theme-color" content="#15132c">
+<link rel="icon" href="img/vhg-logo.png">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header class="topbar">
-  <button id="navToggle" class="icon-btn" aria-label="Vis eller skjul menu">☰</button>
-  <div class="brand">
+  <button id="navToggle" class="icon-btn" aria-label="Vis eller skjul listen over taktikker">☰</button>
+  <a class="brand-logo" href="https://www.vhg.dk" title="Til vhg.dk">
+    <img src="img/vhg-logo.png" alt="VHG — Vester Hassing Gymnastik &amp; Idrætsforening" width="40" height="40">
+  </a>
+  <a class="brand-text" href="index.html">
     <strong>Floorball-taktik</strong>
-    <span>motionshold · 6 mod 6</span>
-  </div>
-  <div class="topbar-nav">
-    <button id="prevScene" class="icon-btn" aria-label="Forrige">‹</button>
-    <button id="nextScene" class="icon-btn" aria-label="Næste">›</button>
-  </div>
+    <small>VHG · 6 mod 6</small>
+  </a>
+  <nav class="sitenav">
+    <a href="index.html" class="is-here">Taktik</a>
+    <a href="regler.html">Regler</a>
+    <a href="om.html">Om</a>
+  </nav>
 </header>
 
 <div class="layout">
@@ -40,8 +45,13 @@
 
     <div class="controls">
       <button id="restart" class="icon-btn" aria-label="Forfra">⟲</button>
+      <button id="prevStep" class="icon-btn" aria-label="Forrige trin">⏮</button>
       <button id="play" class="icon-btn play" aria-label="Afspil">▶</button>
-      <input id="scrub" class="scrub" type="range" min="0" max="10" step="0.05" value="0" aria-label="Tidslinje">
+      <button id="nextStep" class="icon-btn" aria-label="Næste trin">⏭</button>
+      <div class="scrubwrap">
+        <input id="scrub" class="scrub" type="range" min="0" max="10" step="0.05" value="0" aria-label="Tidslinje">
+        <div id="ticks" class="ticks" aria-hidden="true"></div>
+      </div>
       <span id="time" class="time">0:00 / 0:00</span>
       <select id="rate" class="rate" aria-label="Hastighed">
         <option value="0.6">0,6×</option>
@@ -70,21 +80,28 @@
       <ol id="steps" class="steps"></ol>
     </section>
 
-    <section class="panel legend">
-      <h2>Sådan læses banen</h2>
-      <ul>
-        <li><span class="key key-home"></span> Vores hold. <strong>MV</strong> målmand, <strong>B1</strong>/<strong>B2</strong> backs, <strong>C</strong> center, <strong>W1</strong>/<strong>W2</strong> wings.</li>
-        <li><span class="key key-away"></span> Modstanderen.</li>
-        <li><span class="key key-ball"></span> Bolden. Den, der har den, får en gul ring om sig.</li>
-        <li><span class="key key-trail"></span> Stiplet spor viser, hvor en spiller har løbet de sidste sekunder.</li>
-        <li>Vi forsvarer altid målet til <strong>venstre</strong> og angriber mod <strong>højre</strong> — i alle scener, så billedet er til at genkende.</li>
-        <li>De to lyse lodrette streger er hjælpelinjer, der deler banen i egen zone, midterbane og angrebszone. <em>De findes ikke på en rigtig bane</em> — der er hverken offside eller blå linjer i floorball.</li>
-      </ul>
+    <section class="panel">
+      <h2>Kommentarer til denne taktik</h2>
+      <p class="empty-note" id="commentEmpty">Har du et tip til lige præcis den her situation, eller mener du den er helt gal? Skriv det her — så kan alle se det.</p>
+      <ul id="commentList" class="comment-list"></ul>
+      <form id="commentForm" class="comment-form" autocomplete="off">
+        <input type="text" id="cName" maxlength="40" placeholder="Dit navn" required>
+        <textarea id="cText" maxlength="600" rows="3" placeholder="Et tip, en rettelse, eller en idé til en ny scene…" required></textarea>
+        <input type="text" id="cHoney" class="honeypot" tabindex="-1" aria-hidden="true" autocomplete="off">
+        <div class="comment-actions">
+          <button type="submit" class="btn" id="cSend">Send</button>
+          <span id="cStatus" class="note"></span>
+        </div>
+      </form>
     </section>
 
+    <div class="scene-jump">
+      <button id="prevScene">‹ Forrige<small id="prevSceneName"></small></button>
+      <button id="nextScene">Næste ›<small id="nextSceneName"></small></button>
+    </div>
+
     <footer class="foot">
-      <p>Banemarkeringerne er tegnet efter de officielle mål på 40 × 20 m, men er en illustration — ikke en opmålingstegning.</p>
-      <p>Tale bruger browserens indbyggede stemme. Virker bedst i Chrome, Edge og Safari, og kræver en dansk stemme på enheden.</p>
+      <p>Lavet af og for VHG. Hvordan banen læses, hvor tallene kommer fra og hvem man brokker sig til står på <a href="om.html">Om siden</a>.</p>
     </footer>
   </main>
 </div>

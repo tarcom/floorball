@@ -168,9 +168,9 @@ class Player {
     this.duration = 0;
     this.rate = 1;
     this.playing = false;
-    this.loop = true;
+    this.stopAt = null;            // hold pause her — bruges af trin-knapperne
+    this.shouldWait = () => false; // sættes af app.js: venter vi på oplæsningen?
     this.onFrame = onFrame;
-    this.gate = null;         // sat mens vi venter på at speaken bliver færdig
     this._last = 0;
     this._tick = this._tick.bind(this);
     requestAnimationFrame(this._tick);
@@ -179,29 +179,37 @@ class Player {
   load(duration) {
     this.duration = duration;
     this.t = 0;
-    this.releaseGate();
+    this.stopAt = null;
+    this.playing = false;
   }
 
-  play() { if (!this.playing) { this.playing = true; this._last = performance.now(); } }
-  pause() { this.playing = false; this.releaseGate(); }
+  get atEnd() { return this.t >= this.duration - 0.02; }
+
+  /* `until` afspiller kun frem til et bestemt sekund og stopper der.
+     Står vi på slutningen, starter play forfra i stedet for ikke at gøre noget. */
+  play(until = null) {
+    this.stopAt = until;
+    if (until == null && this.atEnd) this.t = 0;
+    if (!this.playing) { this.playing = true; this._last = performance.now(); }
+  }
+
+  pause() { this.playing = false; this.stopAt = null; }
   toggle() { this.playing ? this.pause() : this.play(); }
-  seek(t) { this.t = Math.max(0, Math.min(this.duration, t)); this.releaseGate(); }
-
-  /* "Vent på tale": afspilningen holdes stille indtil oplæsningen er færdig,
-     med en sikkerhedstimeout så vi aldrig hænger fast hvis lyden fejler. */
-  holdGate(maxMs) {
-    this.releaseGate();
-    this.gate = setTimeout(() => { this.gate = null; }, maxMs);
-  }
-  releaseGate() { if (this.gate) { clearTimeout(this.gate); this.gate = null; } }
+  seek(t) { this.t = Math.max(0, Math.min(this.duration, t)); this.stopAt = null; }
 
   _tick(now) {
     const dt = Math.min(0.12, (now - this._last) / 1000);
     this._last = now;
-    if (this.playing && !this.gate) {
+    if (this.playing && !this.shouldWait()) {
       this.t += dt * this.rate;
-      if (this.t >= this.duration) {
-        if (this.loop) this.t = 0; else { this.t = this.duration; this.playing = false; }
+      if (this.stopAt != null && this.t >= this.stopAt) {
+        this.t = this.stopAt;
+        this.playing = false;
+        this.stopAt = null;
+      } else if (this.t >= this.duration) {
+        // Scenen kører ikke i ring — den stopper, og brugeren starter selv igen.
+        this.t = this.duration;
+        this.playing = false;
       }
     }
     this.onFrame(this.t, now / 1000);
@@ -221,7 +229,14 @@ class Speaker {
     this.voice = null;
     this.rate = 0.98;
     this.audio = null;
-    this.onEnd = null;
+    /* token tæller op ved hver stop() og hver ny oplæsning. Uden den opstår
+       en grim fejl: speechSynthesis.cancel() udløser den FORRIGE oplæsnings
+       end-event asynkront, og den callback slap tidligere den nye pause fri
+       få millisekunder efter den var sat. Derfor virkede "vent på tale" kun
+       nogle gange. Nu ignoreres events fra en forældet token. */
+    this.token = 0;
+    this.speaking = false;
+    this.deadline = 0;
     if (this.supported) {
       const pick = () => { this.voice = this._pickDanish(); };
       pick();
@@ -248,35 +263,62 @@ class Speaker {
     } catch (_) { /* ligegyldigt hvis det fejler */ }
   }
 
+  /* Læses der stadig op lige nu? Afspilleren spørger om dette hvert billede
+     i stedet for at blive sluppet fri af en callback — så er der ingen
+     rækkefølge at tage fejl af. */
+  get busy() {
+    if (!this.speaking) return false;
+    // Sikkerhedsnet: fyrer browseren aldrig 'end', må afspilningen ikke hænge.
+    if (performance.now() > this.deadline) { this.speaking = false; return false; }
+    return true;
+  }
+
   stop() {
+    this.token++;
+    this.speaking = false;
     if (this.supported) { try { speechSynthesis.cancel(); } catch (_) {} }
     if (this.audio) { this.audio.pause(); this.audio = null; }
   }
 
-  /* Returnerer et gæt på varigheden i ms, så afspilleren kan vente. */
-  say(step, done) {
+  say(step) {
     this.stop();
     const text = (step.speech || step.text || '').replace(/\s+/g, ' ').trim();
-    const guessMs = Math.min(26000, 1400 + text.split(' ').length * 420);
-    if (!this.enabled || !text) { return 0; }
+    if (!this.enabled || !text) return;
 
+    const my = this.token;
+    const done = () => { if (my === this.token) this.speaking = false; };
+    this.speaking = true;
+    this.deadline = performance.now()
+      + Math.min(30000, 1600 + text.split(' ').length * 430) + 8000;
+
+    // Er der lagt en rigtig indtaling på trinnet, vinder den over den
+    // syntetiske stemme. Koden skal ikke ændres for at skifte.
     if (step.audio) {
       this.audio = new Audio(step.audio);
-      this.audio.addEventListener('ended', () => done && done());
-      this.audio.addEventListener('error', () => done && done());
-      this.audio.play().catch(() => done && done());
-      return guessMs;
+      this.audio.addEventListener('ended', done);
+      this.audio.addEventListener('error', done);
+      this.audio.play().catch(done);
+      return;
     }
 
-    if (!this.supported) return 0;
+    if (!this.supported) { this.speaking = false; return; }
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'da-DK';
     if (this.voice) u.voice = this.voice;
     u.rate = this.rate;
     u.pitch = 1;
-    u.addEventListener('end', () => done && done());
-    u.addEventListener('error', () => done && done());
+    u.addEventListener('end', done);
+    u.addEventListener('error', done);
     speechSynthesis.speak(u);
-    return guessMs;
+  }
+
+  softPause() {
+    if (this.supported) { try { speechSynthesis.pause(); } catch (_) {} }
+    if (this.audio) this.audio.pause();
+  }
+
+  softResume() {
+    if (this.supported) { try { speechSynthesis.resume(); } catch (_) {} }
+    if (this.audio) this.audio.play().catch(() => {});
   }
 }

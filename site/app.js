@@ -13,7 +13,10 @@ const el = {
   points: $('#points'),
   play: $('#play'),
   restart: $('#restart'),
+  prevStep: $('#prevStep'),
+  nextStep: $('#nextStep'),
   scrub: $('#scrub'),
+  ticks: $('#ticks'),
   time: $('#time'),
   rate: $('#rate'),
   speech: $('#speech'),
@@ -23,6 +26,16 @@ const el = {
   optWait: $('#optWait'),
   prev: $('#prevScene'),
   next: $('#nextScene'),
+  prevName: $('#prevSceneName'),
+  nextName: $('#nextSceneName'),
+  commentList: $('#commentList'),
+  commentEmpty: $('#commentEmpty'),
+  commentForm: $('#commentForm'),
+  cName: $('#cName'),
+  cText: $('#cText'),
+  cHoney: $('#cHoney'),
+  cSend: $('#cSend'),
+  cStatus: $('#cStatus'),
 };
 
 const view = new CourtView(el.canvas);
@@ -35,7 +48,19 @@ let showTrails = true;
 let waitForSpeech = true;
 
 const player = new Player(render);
-player.loop = true;
+
+/* Vent på tale: vi holder IKKE pause i starten af et trin — så ville
+   billedet stå stille mens der blev talt. Vi lader trinnet spille færdig
+   og venter først ved trinnets slutning, hvis oplæsningen ikke er nået i mål.
+   Så følges bevægelse og tale ad, og næste trin begynder aldrig for tidligt. */
+player.shouldWait = () => {
+  if (!waitForSpeech || !speaker.enabled || !scene || !speaker.busy) return false;
+  const i = scene.stepAt(player.t);
+  if (i < 0) return false;
+  const next = scene.steps[i + 1];
+  const end = next ? next.t : scene.duration;
+  return player.t >= end - 0.06;
+};
 
 /* ------------------------------------------------------------------ menu */
 
@@ -86,13 +111,20 @@ function loadScene(i, autoplay = true) {
   el.scrub.value = '0';
 
   el.steps.innerHTML = '';
+  el.ticks.innerHTML = '';
   scene.steps.forEach((s, idx) => {
     const li = document.createElement('li');
     li.className = 'step';
     li.dataset.idx = idx;
     li.innerHTML = `<span class="step-time">${fmt(s.t)}</span><span class="step-text">${s.text}</span>`;
-    li.addEventListener('click', () => { player.seek(s.t + 0.02); player.play(); });
+    li.addEventListener('click', () => gotoStep(idx));
     el.steps.appendChild(li);
+
+    // hak på tidslinjen, så man kan se hvor trinnene ligger
+    const tick = document.createElement('span');
+    tick.className = 'tick';
+    tick.style.left = `${(s.t / scene.duration) * 100}%`;
+    el.ticks.appendChild(tick);
   });
 
   el.points.innerHTML = '';
@@ -102,12 +134,93 @@ function loadScene(i, autoplay = true) {
     el.points.appendChild(li);
   });
 
+  const prev = SCENES[(sceneIndex - 1 + SCENES.length) % SCENES.length];
+  const next = SCENES[(sceneIndex + 1) % SCENES.length];
+  el.prevName.textContent = prev.title;
+  el.nextName.textContent = next.title;
+
+  loadComments(scene.id);
+
   player.load(scene.duration);
   if (autoplay) player.play();
   markNav();
   history.replaceState(null, '', '#' + scene.id);
   layout();
 }
+
+/* --------------------------------------------------------- kommentarer */
+
+/* Serveren gemmer og sender UTC (…Z). Vi viser dansk lokaltid, så en
+   kommentar skrevet efter træning ikke ser ud til at være fra to timer siden. */
+function formatWhen(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  return d.toLocaleString('da-DK', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+  });
+}
+
+function renderComments(list) {
+  el.commentList.innerHTML = '';
+  el.commentEmpty.hidden = list.length > 0;
+  for (const c of list) {
+    const li = document.createElement('li');
+    li.className = 'comment';
+    const head = document.createElement('div');
+    head.className = 'comment-head';
+    const b = document.createElement('b');
+    b.textContent = c.name;                 // textContent, ikke innerHTML —
+    head.appendChild(b);                    // navne og tekst kommer udefra
+    head.append(' · ' + formatWhen(c.created));
+    const body = document.createElement('div');
+    body.className = 'comment-body';
+    body.textContent = c.text;
+    li.append(head, body);
+    el.commentList.appendChild(li);
+  }
+}
+
+async function loadComments(sceneId) {
+  renderComments([]);
+  el.cStatus.textContent = '';
+  try {
+    const r = await fetch(`api/comments.php?scene=${encodeURIComponent(sceneId)}`, { cache: 'no-store' });
+    const data = await r.json();
+    if (data.ok && sceneId === scene.id) renderComments(data.comments);
+  } catch (_) {
+    // Lokalt uden PHP findes der ingen backend. Så viser vi bare formularen
+    // og lader være med at genere brugeren med en fejl.
+  }
+}
+
+el.commentForm.addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const name = el.cName.value.trim();
+  const text = el.cText.value.trim();
+  if (!name || !text) return;
+
+  el.cSend.disabled = true;
+  el.cStatus.className = 'note';
+  el.cStatus.textContent = 'Sender…';
+  try {
+    const r = await fetch('api/comments.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scene: scene.id, name, text, hp: el.cHoney.value }),
+    });
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || 'Det gik galt.');
+    renderComments(data.comments);
+    el.cText.value = '';
+    el.cStatus.className = 'note is-ok';
+    el.cStatus.textContent = 'Tak — den er på.';
+  } catch (err) {
+    el.cStatus.className = 'note is-error';
+    el.cStatus.textContent = err.message || 'Kunne ikke sende. Prøv igen om lidt.';
+  } finally {
+    el.cSend.disabled = false;
+  }
+});
 
 function fmt(t) {
   const s = Math.max(0, Math.floor(t));
@@ -271,8 +384,13 @@ function render(t, wallClock) {
   }
   if (document.activeElement !== el.scrub) el.scrub.value = String(t);
   el.time.textContent = `${fmt(t)} / ${fmt(scene.duration)}`;
-  el.play.textContent = player.playing ? '⏸' : '▶';
-  el.play.setAttribute('aria-label', player.playing ? 'Pause' : 'Afspil');
+  const label = player.playing ? '⏸' : (player.atEnd ? '↻' : '▶');
+  if (el.play.textContent !== label) {
+    el.play.textContent = label;
+    el.play.setAttribute('aria-label',
+      player.playing ? 'Pause' : (player.atEnd ? 'Spil igen' : 'Afspil'));
+  }
+  el.stage.classList.toggle('is-waiting', player.playing && player.shouldWait());
 }
 
 /* --------------------------------------------------------------- trin */
@@ -283,35 +401,61 @@ function onStepChange(idx) {
   el.steps.querySelectorAll('.step').forEach(li => {
     li.classList.toggle('is-active', Number(li.dataset.idx) === idx);
   });
-
   if (!step) { speaker.stop(); return; }
-
-  if (speaker.enabled) {
-    const guessMs = speaker.say(step, () => player.releaseGate());
-    if (waitForSpeech && guessMs && player.playing) {
-      player.holdGate(guessMs + 5000);   // sikkerhedsnet hvis lyden aldrig melder færdig
-    }
-  }
+  if (speaker.enabled) speaker.say(step);
 }
 
 /* ------------------------------------------------------------ kontroller */
 
+/* Et trin afspilles frem til lige før det næste begynder, så teksten bliver
+   stående i stedet for at hoppe videre i samme øjeblik man stopper. */
+function gotoStep(target) {
+  if (!scene || !scene.steps.length) return;
+  target = Math.max(0, Math.min(scene.steps.length - 1, target));
+  const next = scene.steps[target + 1];
+  speaker.stop();
+  speaker.unlock();
+  lastStepIdx = -2;
+  player.seek(scene.steps[target].t + 0.01);
+  player.play(next ? next.t - 0.05 : scene.duration);
+}
+
+function currentStep() { return Math.max(0, scene ? scene.stepAt(player.t) : 0); }
+
 el.play.addEventListener('click', () => {
-  if (!player.playing) speaker.unlock();
-  player.toggle();
-  if (!player.playing) speaker.stop();
+  if (player.playing) {
+    player.pause();
+    speaker.softPause();
+  } else {
+    speaker.unlock();
+    if (player.atEnd) { speaker.stop(); lastStepIdx = -2; }
+    player.play();
+    speaker.softResume();
+  }
 });
-el.restart.addEventListener('click', () => { player.seek(0); lastStepIdx = -2; player.play(); });
-el.scrub.addEventListener('input', () => { player.seek(Number(el.scrub.value)); });
+
+el.restart.addEventListener('click', () => {
+  speaker.stop();
+  lastStepIdx = -2;
+  player.seek(0);
+  player.play();
+});
+
+// Står vi et stykke inde i et trin, går "forrige" til trinnets start —
+// samme opførsel som spring-tilbage på en musikafspiller.
+el.prevStep.addEventListener('click', () => {
+  const i = currentStep();
+  gotoStep(player.t > scene.steps[i].t + 0.9 ? i : i - 1);
+});
+el.nextStep.addEventListener('click', () => gotoStep(currentStep() + 1));
+
+el.scrub.addEventListener('input', () => { speaker.stop(); player.seek(Number(el.scrub.value)); });
 el.rate.addEventListener('change', () => { player.rate = Number(el.rate.value); });
 el.prev.addEventListener('click', () => loadScene(sceneIndex - 1));
 el.next.addEventListener('click', () => loadScene(sceneIndex + 1));
 
 el.optTrails.addEventListener('change', () => { showTrails = el.optTrails.checked; });
-el.optWait.addEventListener('change', () => {
-  waitForSpeech = el.optWait.checked;
-  if (!waitForSpeech) player.releaseGate();
-});
+el.optWait.addEventListener('change', () => { waitForSpeech = el.optWait.checked; });
 
 el.speech.addEventListener('click', () => {
   speaker.enabled = !speaker.enabled;
@@ -323,7 +467,6 @@ el.speech.addEventListener('click', () => {
     lastStepIdx = -2;           // læs det aktuelle trin op med det samme
   } else {
     speaker.stop();
-    player.releaseGate();
     el.speechNote.textContent = '';
   }
 });
@@ -340,9 +483,9 @@ function updateSpeechNote() {
 
 document.addEventListener('keydown', (ev) => {
   if (ev.target.matches('input, select, textarea')) return;
-  if (ev.code === 'Space') { ev.preventDefault(); speaker.unlock(); player.toggle(); if (!player.playing) speaker.stop(); }
-  else if (ev.code === 'ArrowLeft') { player.seek(player.t - 1); lastStepIdx = -2; }
-  else if (ev.code === 'ArrowRight') { player.seek(player.t + 1); lastStepIdx = -2; }
+  if (ev.code === 'Space') { ev.preventDefault(); el.play.click(); }
+  else if (ev.code === 'ArrowLeft') { ev.preventDefault(); el.prevStep.click(); }
+  else if (ev.code === 'ArrowRight') { ev.preventDefault(); el.nextStep.click(); }
 });
 
 $('#navToggle').addEventListener('click', () => document.body.classList.toggle('nav-open'));

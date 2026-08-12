@@ -1,3 +1,7 @@
 .ftp-credentials
 __pycache__/
 .venv/
+
+# Kommentardatabasen lever kun på serveren. Den lokale kopi opstår, når man
+# kører PHP-serveren under udvikling, og skal hverken i git eller med i deploy.
+site/api/data/

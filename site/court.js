@@ -17,29 +17,31 @@ const COURT = {
   GL: 2.85,       // mållinje målt fra kortsiden
   GOAL_W: 1.6,    // målets bredde
   GOAL_D: 0.4,    // målets dybde (bagud mod banden)
-  AREA_W: 5,      // målområde, bredde
-  AREA_D: 4,      // målområde, dybde ind mod midten
-  CREASE_W: 2.5,  // målfelt, bredde
-  CREASE_D: 1,    // målfelt, dybde
+  // Betegnelserne følger den danske regelbog: MÅLFELTET er det STØRSTE af de
+  // to rektangler foran målet, og målvogterfeltet er det lille indeni.
+  AREA_W: 5,      // målfelt, bredde
+  AREA_D: 4,      // målfelt, dybde ind mod midten
+  CREASE_W: 2.5,  // målvogterfelt, bredde
+  CREASE_D: 1,    // målvogterfelt, dybde
 };
 
+/* Vores hold har VHG-logoets lilla-blå, modstanderen rød og bolden logoets
+   gule. Fremhævninger bruger floorball-afdelingens grønne. */
 const COLORS = {
-  boards:   '#26313f',
-  surface:  '#e3ebf2',
-  line:     '#8ea4b8',
-  lineSoft: '#c0cedb',
-  area:     '#d2dfea',
-  crease:   '#bccdde',
-  helper:   '#a9bccd',
-  home:     '#2563eb',
-  homeDark: '#1a49aa',
-  away:     '#e0503f',
-  awayDark: '#a5341f',
-  ball:     '#ffcc1f',
+  boards:   '#2b2a44',
+  surface:  '#e7eaf3',
+  line:     '#9a9cbb',
+  lineSoft: '#c6c8dd',
+  area:     '#d6d9ea',
+  crease:   '#c2c5de',
+  helper:   '#b0b2cc',
+  home:     '#3B3573',
+  homeDark: '#211C46',
+  away:     '#D9443A',
+  awayDark: '#8E2318',
+  ball:     '#FFCC1F',
   ballDark: '#8a6a00',
-  focus:    '#00d6a1',
-  pass:     '#1b8f74',
-  shot:     '#d81f6a',
+  focus:    '#00A08A',
 };
 
 class CourtView {
