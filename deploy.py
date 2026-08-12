@@ -23,15 +23,16 @@ Loginoplysninger læses fra .ftp-credentials (ikke i git):
     FTP_PASS=...          # samme som FTP_PASSWORD-hemmeligheden i vhg-repoet
 """
 import ftplib
-import hashlib
 import io
 import os
-import re
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from stamp import bust           # samme versionsstempling som i GitHub Actions
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LOCAL = os.path.join(HERE, "site")
 REMOTE = "public_html/floorball"     # relativt til FTP-login
-BUST = ("style.css", "court.js", "engine.js", "scenes.js", "app.js")
 SKIP_DIRS = {"data"}                 # ligger kun på serveren (SQLite)
 
 creds = {}
@@ -41,22 +42,6 @@ with open(os.path.join(HERE, ".ftp-credentials")) as fh:
         if "=" in line and not line.startswith("#"):
             k, v = line.split("=", 1)
             creds[k] = v
-
-
-def digest(name):
-    with open(os.path.join(LOCAL, name), "rb") as fh:
-        return hashlib.md5(fh.read()).hexdigest()[:8]
-
-
-def bust(html_bytes):
-    html = html_bytes.decode("utf-8")
-    for name in BUST:
-        html = re.sub(
-            r'(["\'])' + re.escape(name) + r'(\?v=[0-9a-f]+)?\1',
-            lambda m, n=name: f'{m.group(1)}{n}?v={digest(n)}{m.group(1)}',
-            html,
-        )
-    return html.encode("utf-8")
 
 
 def ensure(f, path):
@@ -77,7 +62,9 @@ def upload(f, local, remote):
                 continue
             upload(f, lp, rp)
         elif name.endswith(".html"):
-            f.storbinary("STOR " + rp, io.BytesIO(bust(open(lp, "rb").read())))
+            with open(lp, encoding="utf-8") as fh:
+                html = bust(fh.read(), LOCAL).encode("utf-8")
+            f.storbinary("STOR " + rp, io.BytesIO(html))
             print("  ->", rp, "(cache-bustet)")
         else:
             with open(lp, "rb") as fh:
