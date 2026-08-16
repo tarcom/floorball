@@ -4,6 +4,9 @@ const $ = (sel) => document.querySelector(sel);
 
 const el = {
   nav: $('#nav'),
+  navList: $('#navList'),
+  navToggle: $('#navToggle'),
+  navScrim: $('#navScrim'),
   title: $('#sceneTitle'),
   summary: $('#sceneSummary'),
   canvas: $('#court'),
@@ -64,8 +67,10 @@ player.shouldWait = () => {
 
 /* ------------------------------------------------------------------ menu */
 
+const isNarrow = () => !window.matchMedia('(min-width: 900px)').matches;
+
 function buildNav() {
-  el.nav.innerHTML = '';
+  el.navList.innerHTML = '';
   for (const cat of CATEGORIES) {
     const group = document.createElement('div');
     group.className = 'nav-group';
@@ -81,20 +86,53 @@ function buildNav() {
       b.addEventListener('click', () => { loadScene(i); closeNavOnMobile(); });
       group.appendChild(b);
     });
-    el.nav.appendChild(group);
+    el.navList.appendChild(group);
   }
 }
 
 function markNav() {
-  el.nav.querySelectorAll('.nav-item').forEach(b => {
+  el.navList.querySelectorAll('.nav-item').forEach(b => {
     b.classList.toggle('is-active', Number(b.dataset.index) === sceneIndex);
   });
 }
 
-function closeNavOnMobile() {
-  if (window.matchMedia('(max-width: 900px)').matches) {
-    document.body.classList.remove('nav-open');
+/* Menuen ligger som en pop-up over siden på smal skærm, så den skal kunne
+   lukkes igen — af scrim, ✕, Escape eller et valgt punkt. På to spalter er
+   den en fast spalte, og så gør nav-open ingenting. */
+/* Siden bagved skal blive stående, mens menuen er åben. `overflow: hidden`
+   alene er ikke nok — iOS scroller videre — så body låses fast og forskydes
+   op med den scrollposition, brugeren stod på. */
+let lockedY = 0;
+
+function openNav() {
+  if (isNarrow()) {
+    lockedY = window.scrollY;
+    document.body.style.top = `-${lockedY}px`;
+    document.body.classList.add('scroll-locked');
   }
+  document.body.classList.add('nav-open');
+  el.navToggle.setAttribute('aria-expanded', 'true');
+  el.nav.scrollTop = 0;
+  $('#navClose').focus();
+}
+
+function closeNav(refocus = true, toTop = false) {
+  if (!document.body.classList.contains('nav-open')) return;
+  if (toTop) lockedY = 0;
+  document.body.classList.remove('nav-open');
+  el.navToggle.setAttribute('aria-expanded', 'false');
+  if (document.body.classList.contains('scroll-locked')) {
+    document.body.classList.remove('scroll-locked');
+    document.body.style.top = '';
+    window.scrollTo(0, lockedY);
+  }
+  if (refocus) el.navToggle.focus();
+}
+
+/* Vælger man en scene, skal man op til banen igen — ikke tilbage til den
+   scrollposition, man havde i den forrige scene. */
+function closeNavOnMobile() {
+  if (isNarrow()) closeNav(false, true);
 }
 
 /* --------------------------------------------------------------- indlæs */
@@ -513,13 +551,29 @@ function updateSpeechNote() {
 }
 
 document.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Escape' && document.body.classList.contains('nav-open')) {
+    ev.preventDefault();
+    closeNav();
+    return;
+  }
   if (ev.target.matches('input, select, textarea')) return;
   if (ev.code === 'Space') { ev.preventDefault(); el.play.click(); }
   else if (ev.code === 'ArrowLeft') { ev.preventDefault(); el.prevStep.click(); }
   else if (ev.code === 'ArrowRight') { ev.preventDefault(); el.nextStep.click(); }
 });
 
-$('#navToggle').addEventListener('click', () => document.body.classList.toggle('nav-open'));
+el.navToggle.addEventListener('click', () => {
+  if (document.body.classList.contains('nav-open')) closeNav();
+  else openNav();
+});
+$('#navClose').addEventListener('click', () => closeNav());
+el.navScrim.addEventListener('click', () => closeNav());
+
+/* Bliver skærmen bred nok til to spalter, mens menuen står åben, skal
+   nav-open væk igen — ellers bliver siden bagved hængende uden scroll. */
+window.matchMedia('(min-width: 900px)').addEventListener('change', (ev) => {
+  if (ev.matches) closeNav(false);
+});
 
 window.addEventListener('resize', layout);
 window.addEventListener('orientationchange', () => setTimeout(layout, 120));

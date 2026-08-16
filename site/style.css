@@ -123,13 +123,77 @@ a { color: var(--teal); }
 
 /* ------------------------------------------------------------------- menu */
 
-.nav {
-  display: none;
-  padding: 8px 12px 20px;
-  border-bottom: 1px solid var(--line);
-  background: #191636;
+/* På mobil er menuen en pop-up *over* siden, ikke en del af sidens flow.
+   Lå den i flowet, skulle man scrolle helt op for at se den — og trykkede man
+   på burgeren længere nede, skete der tilsyneladende ingenting. */
+
+.nav-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(8, 7, 20, .62);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease;
 }
-body.nav-open .nav { display: block; }
+body.nav-open .nav-scrim { opacity: 1; pointer-events: auto; }
+
+.nav {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(86vw, 340px);
+  padding: 0 12px 24px;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  background: #191636;
+  border-right: 1px solid var(--line);
+  box-shadow: 0 0 44px rgba(0, 0, 0, .6);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  transform: translateX(-100%);
+  visibility: hidden;
+  transition: transform .2s ease, visibility .2s;
+}
+body.nav-open .nav { transform: none; visibility: visible; }
+
+/* Overskrift + luk-knap følger med, når man scroller i en lang liste. */
+.nav-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+  padding: 10px 0;
+  padding-top: max(10px, env(safe-area-inset-top));
+  background: #191636;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+}
+
+/* Siden bagved må ikke kunne scrolle, mens menuen ligger over den.
+   `overflow: hidden` alene holder ikke på iOS — body låses fast, og app.js
+   forskyder den op med den scrollposition, brugeren stod på. */
+@media (max-width: 899.98px) {
+  body.scroll-locked {
+    position: fixed;
+    left: 0;
+    right: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+}
+.nav-scrim { touch-action: none; }
+
+.nav-group:first-child h2 { margin-top: 10px; }
 
 .nav-group h2 {
   font-size: .72rem;
@@ -474,15 +538,23 @@ body.nav-open .nav { display: block; }
     grid-template-columns: 300px minmax(0, 1fr);
     align-items: start;
   }
+  /* På to spalter er menuen ikke længere en pop-up, men en fast spalte. */
   .nav {
-    display: block !important;
     position: sticky;
+    z-index: auto;
     top: 59px;
+    left: auto;
+    bottom: auto;
+    width: auto;
     max-height: calc(100vh - 59px);
-    overflow-y: auto;
-    border-bottom: none;
+    padding: 8px 12px 20px;
     border-right: 1px solid var(--line-soft);
+    box-shadow: none;
+    transform: none;
+    visibility: visible;
+    transition: none;
   }
+  .nav-head, .nav-scrim { display: none; }
   #navToggle { display: none; }
   .main { padding: 18px 24px 70px; }
   .scene-head h1 { font-size: 1.65rem; }

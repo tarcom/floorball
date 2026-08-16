@@ -12,7 +12,8 @@
 <body>
 
 <header class="topbar">
-  <button id="navToggle" class="icon-btn" aria-label="Vis eller skjul listen over taktikker">☰</button>
+  <button id="navToggle" class="icon-btn" aria-label="Vis eller skjul listen over taktikker"
+          aria-controls="nav" aria-expanded="false">☰</button>
   <a class="brand-logo" href="https://www.vhg.dk" title="Til vhg.dk">
     <img src="img/vhg-logo.png" alt="VHG — Vester Hassing Gymnastik &amp; Idrætsforening" width="40" height="40">
   </a>
@@ -29,7 +30,15 @@
 
 <div class="layout">
 
-  <nav id="nav" class="nav" aria-label="Taktikker"></nav>
+  <div id="navScrim" class="nav-scrim"></div>
+
+  <nav id="nav" class="nav" aria-label="Taktikker">
+    <div class="nav-head">
+      <span>Taktikker</span>
+      <button id="navClose" class="icon-btn" aria-label="Luk listen">✕</button>
+    </div>
+    <div id="navList"></div>
+  </nav>
 
   <main class="main">
     <div class="scene-head">
