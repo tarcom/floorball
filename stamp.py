@@ -5,11 +5,9 @@ Uden det kan en browser sidde med app.js fra i forgårs og style.css fra i
 dag, og så ser siden i bedste fald forkert ud. Hashen ændrer sig kun når
 filen ændrer sig, så en uændret fil bliver ved med at komme fra cachen.
 
-Bruges to steder, og det skal give præcis samme resultat begge veje:
-
-  * deploy.py stempler i hukommelsen under upload (rører ikke arbejdstræet)
-  * GitHub Actions kører `python stamp.py site` og stempler filerne på disk
-    i sit eget midlertidige checkout før FTP-uploadet
+deploy.py stempler i hukommelsen under upload og rører ikke arbejdstræet.
+`python stamp.py site` stempler filerne på disk; det brugte GitHub
+Actions-deployet, som er fjernet 2026-10-22.
 """
 import hashlib
 import os

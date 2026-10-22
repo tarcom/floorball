@@ -60,21 +60,20 @@ med kode 1 ved fejl.
 python deploy.py
 ```
 
-Uploader `site/` til `public_html/floorball/` på `ftp.vhg.dk` og stempler
+Deployet køres i hånden — et push deployer ikke (GitHub Actions er fjernet
+2026-10-22). Uploader `site/` til `public_html/floorball/` på `ftp.vhg.dk` og stempler
 `?v=<hash>` på css og js, så browsere ikke sidder med en halvgammel kopi.
 Loginoplysninger står i `.ftp-credentials`, som ikke er i git:
 
 ```
 FTP_HOST=ftp.vhg.dk
 FTP_USER=allan@vhg.dk
-FTP_PASS=...        # samme som FTP_PASSWORD-hemmeligheden i vhg-repoet
+FTP_PASS=...        # samme konto som vhg-repoets .ftp-credentials
 ```
 
-> **⚠️ `floorball/**` skal stå i exclude-listen i vhg-repoet.**
-> `vhg/.github/workflows/deploy-ftp.yml` deployer hele `public_html/` og
-> **sletter alt der ikke er ekskluderet**. Uden linjen forsvinder hele denne
-> side — inklusive kommentardatabasen — ved næste push til `vhg`.
-> Linjen er tilføjet, men tjek den, hvis siden en dag er væk.
+> **`floorball/**` står i `UDELAD` i `vhg/deploy.py`.** vhg-repoets deploy
+> sender kun sine egne filer og sletter intet, så den rører ikke denne side.
+> Linjen er et ekstra værn — lad den blive stående.
 
 `deploy.py` sletter aldrig noget på serveren og springer `data/`-mapper over,
 fordi `site/api/data/comments.sqlite` kun findes derovre.

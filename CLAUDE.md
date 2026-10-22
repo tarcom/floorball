@@ -25,15 +25,16 @@ usynlige, hvis man bare kigger på animationen.
 `?t=4.6#krydsloeb` hopper til sekund 4,6 og holder pause. Brug den til at
 kontrollere en scene billede for billede i stedet for at vente på den.
 
-## ⚠️ Det der kan slette hele siden
+## Deploy og det, der kun findes på serveren
 
-`vhg`-repoets GitHub Action deployer hele `public_html/` og **sletter alt der
-ikke står i `exclude`-listen** i `.github/workflows/deploy-ftp.yml`. Linjen
-`floorball/**` skal blive stående der. Uden den forsvinder siden — inklusive
-`api/data/comments.sqlite`, som kun findes på serveren — ved næste push til
-`vhg`.
+**Deployet køres i hånden** med `python deploy.py` — et push deployer ikke
+(GitHub Actions er fjernet 2026-10-22). `deploy.py` sletter aldrig noget og
+springer `data/`-mapper over, så `api/data/comments.sqlite`, som kun findes på
+serveren, aldrig røres.
 
-`deploy.py` sletter til gengæld aldrig noget og springer `data/`-mapper over.
+`vhg`-repoets `deploy.py` deployer til samme webhotel, men sender kun sine
+egne filer og sletter intet. `floorball/**` står i dens `UDELAD`-liste som et
+ekstra værn; lad linjen blive stående.
 
 ## Ting der ikke må laves om uden grund
 

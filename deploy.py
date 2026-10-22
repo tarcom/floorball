@@ -4,12 +4,12 @@
     python deploy.py
 
 Siden er et selvstændigt projekt, men bor i en undermappe på vhg.dk's
-webhotel (Netgiganten). To ting følger af det:
+webhotel (Netgiganten). Deployet køres i hånden; der er ingen GitHub Actions
+(fjernet 2026-10-22). To ting følger af det:
 
-  * VHG-repoets GitHub Action deployer hele `public_html/` og SLETTER alt
-    der ikke står i dens `exclude`-liste. `floorball/**` SKAL derfor stå i
-    .github/workflows/deploy-ftp.yml i vhg-repoet. Gør den ikke det,
-    forsvinder denne side ved næste vhg-deploy.
+  * vhg-repoets deploy.py rører ikke public_html/floorball/: den sender kun
+    vhg-repoets egne filer, sletter intet, og `floorball/**` står i dens
+    UDELAD-liste for en sikkerheds skyld. Lad linjen blive stående.
   * Vi uploader kun — der slettes aldrig noget på serveren. Det er med
     vilje: kommentar-databasen (api/data/comments.sqlite) findes kun
     derovre og må ikke røres.
@@ -20,7 +20,7 @@ kopi i cachen ikke sidder med halvdelen af siden fra i forgårs.
 Loginoplysninger læses fra .ftp-credentials (ikke i git):
     FTP_HOST=ftp.vhg.dk
     FTP_USER=allan@vhg.dk
-    FTP_PASS=...          # samme som FTP_PASSWORD-hemmeligheden i vhg-repoet
+    FTP_PASS=...          # samme konto som vhg-repoets .ftp-credentials
 """
 import ftplib
 import io
@@ -28,7 +28,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from stamp import bust           # samme versionsstempling som i GitHub Actions
+from stamp import bust           # versionsstemplingen, også brugbar for sig
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LOCAL = os.path.join(HERE, "site")
